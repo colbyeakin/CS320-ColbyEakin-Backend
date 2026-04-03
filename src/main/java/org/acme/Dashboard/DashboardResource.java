@@ -30,6 +30,7 @@ public class DashboardResource {
 
     // GET endpoint to retrieve dashboard data
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getDashboard() {
         double totalSpent = calculateTotalSpent();
         DashboardResponse response = new DashboardResponse(totalBudget, totalSpent);
