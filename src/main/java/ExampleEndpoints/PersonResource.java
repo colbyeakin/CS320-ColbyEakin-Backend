@@ -74,7 +74,7 @@ public class PersonResource {
         for (Person person : people) {
             if (person.id == id) {
                 person.age = newAge;
-                return Response.ok("Perosn with ID " + id + " now has age " + newAge + ".").build();
+                return Response.ok("Person with ID " + id + " now has age " + newAge + ".").build();
             }
         }
         return Response.status(Response.Status.NOT_FOUND)
