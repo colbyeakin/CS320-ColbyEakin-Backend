@@ -7,16 +7,17 @@
 
 package org.acme.Transactions;
 
-public class Transaction {
-    public int id;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "transactions")
+public class Transaction extends PanacheEntity {
     public String date;
     public String category;
     public String description;
     public Double amount;
-
-    public int getId() {
-        return id;
-    }
 
     public String getDate() {
         return date;
