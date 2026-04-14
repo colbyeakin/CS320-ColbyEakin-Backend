@@ -8,6 +8,9 @@
 
 package org.acme.Dashboard;
 
+import java.util.List;
+
+import org.acme.Goals.Goal;
 import org.acme.Transactions.Transaction;
 
 import jakarta.ws.rs.Consumes;
@@ -32,45 +35,36 @@ public class DashboardResource {
         return Response.ok(response).build();
     }
 
+    @GET
+    @Path("/overview")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getDashboardOverview() {
+        try {
+            DashboardMetrics metrics = calculateDashboardMetrics();
+            List<Goal> goals = Goal.listAll();
+
+            return Response.ok(
+                    new DashboardOverviewResponse(
+                            totalBudget,
+                            metrics.totalSpent(),
+                            metrics.breakdown(),
+                            goals))
+                    .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error generating dashboard overview")
+                    .build();
+        }
+    }
+
     // GET endpoint to retrieve category breakdown
     @GET
     @Path("/breakdown")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBreakdown() {
         try {
-            var transactions = Transaction.<Transaction>listAll();
-
-            // Calculate total spent
-            double totalSpent = transactions.stream()
-                    .map(Transaction::getAmount)
-                    .filter(amount -> amount != null)
-                    .mapToDouble(Double::doubleValue)
-                    .sum();
-
-            // Group by category
-            var categoryTotals = transactions.stream()
-                    .filter(t -> t.getCategory() != null && t.getAmount() != null)
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            Transaction::getCategory,
-                            java.util.stream.Collectors.summingDouble(Transaction::getAmount)));
-
-            // Convert to response objects
-            var breakdownList = categoryTotals.entrySet().stream()
-                    .map(entry -> {
-                        double amount = entry.getValue();
-                        double percent = totalSpent > 0
-                                ? Math.round((amount / totalSpent) * 10000.0) / 100.0
-                                : 0;
-
-                        return new CategoryBreakdownItem(
-                                entry.getKey(),
-                                amount,
-                                percent);
-                    })
-                    .sorted((a, b) -> Double.compare(b.amount, a.amount))
-                    .toList();
-
-            return Response.ok(new BreakdownResponse(totalSpent, breakdownList)).build();
+            DashboardMetrics metrics = calculateDashboardMetrics();
+            return Response.ok(new BreakdownResponse(metrics.totalSpent(), metrics.breakdown())).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error generating breakdown")
@@ -100,4 +94,38 @@ public class DashboardResource {
                 .mapToDouble(Double::doubleValue)
                 .sum();
     }
+
+    private DashboardMetrics calculateDashboardMetrics() {
+        var transactions = Transaction.<Transaction>listAll();
+
+        double totalSpent = transactions.stream()
+                .map(Transaction::getAmount)
+                .filter(amount -> amount != null)
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
+        var breakdown = transactions.stream()
+                .filter(transaction -> transaction.getCategory() != null && transaction.getAmount() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        Transaction::getCategory,
+                        java.util.stream.Collectors.summingDouble(Transaction::getAmount)))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    double amount = entry.getValue();
+                    double percent = totalSpent > 0
+                            ? Math.round((amount / totalSpent) * 10000.0) / 100.0
+                            : 0;
+
+                    return new CategoryBreakdownItem(entry.getKey(), amount, percent);
+                })
+                .sorted((left, right) -> Double.compare(right.amount, left.amount))
+                .toList();
+
+        return new DashboardMetrics(totalSpent, breakdown);
+    }
+
+    private record DashboardMetrics(double totalSpent, List<CategoryBreakdownItem> breakdown) {
+    }
 }
+

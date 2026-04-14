@@ -7,6 +7,8 @@
 
 package org.acme.Transactions;
 
+import java.time.OffsetDateTime;
+
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -14,12 +16,12 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "transactions")
 public class Transaction extends PanacheEntity {
-    public String date;
+    public OffsetDateTime date;
     public String category;
     public String description;
     public Double amount;
 
-    public String getDate() {
+    public OffsetDateTime getDate() {
         return date;
     }
 
@@ -35,7 +37,7 @@ public class Transaction extends PanacheEntity {
         return amount;
     }
 
-    public void setDate(String date) {
+    public void setDate(OffsetDateTime date) {
         this.date = date;
     }
 
